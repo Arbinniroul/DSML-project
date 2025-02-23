@@ -10,8 +10,8 @@ import h5py
 from werkzeug.datastructures import FileStorage
 
 # File paths
-model_json_path = "emotiondetector.json"
-model_weights_path = "emotiondetector.weights.h5"
+model_json_path = "emotiondetectorss.json"
+model_weights_path = "facial_expressionss.h5"
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -33,24 +33,32 @@ except Exception as e:
     logger.error(f"Corrupt model file: {str(e)}")
     exit(1)
 
-# Load model
-try:
-    with open(model_json_path, "r") as json_file:
-        model_json = json_file.read()
-    model = model_from_json(model_json)
-    model.load_weights(model_weights_path)
-    logger.info("Model loaded successfully")
-except Exception as e:
-    logger.error(f"Error loading model: {str(e)}")
-    exit(1)
+# Load model once during app startup
+def load_model():
+    try:
+        with open(model_json_path, "r") as json_file:
+            model_json = json_file.read()
+        model = model_from_json(model_json)
+        model.load_weights(model_weights_path)
+        logger.info("Model loaded successfully")
+        return model
+    except Exception as e:
+        logger.error(f"Error loading model: {str(e)}")
+        exit(1)
+
+model = load_model()
 
 # Load Haar cascade
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+if face_cascade.empty():
+    logger.error("Failed to load Haar cascade classifier.")
+    exit(1)
+
 labels = {0: 'angry', 1: 'disgust', 2: 'fear', 3: 'happy', 4: 'neutral', 5: 'sad', 6: 'surprise'}
 
 # Flask app setup
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins="http://localhost:3000")  # Specify allowed origin for security
 
 def validate_image(file: FileStorage):
     """
@@ -79,7 +87,7 @@ def detect_emotion(img):
         for (x, y, w, h) in faces:
             roi_gray = cv2.resize(gray[y:y+h, x:x+w], (48, 48))
             img_array = image.img_to_array(roi_gray)
-            img_array = np.expand_dims(img_array, axis=0) / 255.0
+            img_array = np.expand_dims(img_array, axis=0) / 255.0  # Normalize
             predictions = model.predict(img_array)
             emotion_label = labels[np.argmax(predictions)]
             results.append({

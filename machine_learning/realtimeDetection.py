@@ -7,7 +7,7 @@ model_json = json_file.read()
 json_file.close()
 model = model_from_json(model_json)
 
-model.load_weights("emotiondetector.h5")
+model.load_weights("facial_expression.h5")
 haar_file=cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
 face_cascade=cv2.CascadeClassifier(haar_file)
 

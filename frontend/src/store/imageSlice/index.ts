@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-
+import FormData from 'form-data';
 // Define the initial state
 interface ImageState {
   images: any[];
@@ -25,13 +25,17 @@ export const uploadImage = createAsyncThunk(
       const response = await axios.post("http://localhost:8001/api/images", formData, {
        
       });
-
+      console.log("Server response:", response.data);
+       // Log server response
       return response.data; // { image, emotion, emotionConfidence }
     } catch (error: any) {
+      console.error("Error in uploadImage thunk:", error); // Log the full error
       return rejectWithValue(error.response?.data?.message || "Error uploading image");
     }
   }
 );
+// Async Thunk for fetching all images
+
 
 // Async Thunk for fetching all images
 export const fetchImages = createAsyncThunk(
@@ -73,12 +77,19 @@ const imageSlice = createSlice({
       })
       .addCase(uploadImage.fulfilled, (state, action) => {
         state.loading = false;
-        state.images.push({
-          ...action.payload.image, // Add the new image
-          emotion: action.payload.emotion,
-          emotionConfidence: action.payload.emotionConfidence,
-        });
+      
+        if (!action.payload || !action.payload.image) {
+          console.error("Invalid API response:", action.payload);
+          return;
+        }
+        
+        
+         console.log(action.payload)
+         state.images=action.payload;
+        
       })
+      
+           
       .addCase(uploadImage.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;

@@ -13,6 +13,7 @@ export const upload = multer({ storage });
 // Upload image to Cloudinary and process emotion detection
 export const uploadImage = async (req: Request, res: Response): Promise<Response> => {
   try {
+    console.log("Backend uploadImage called"); // Check if this logs
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
@@ -37,13 +38,15 @@ export const uploadImage = async (req: Request, res: Response): Promise<Response
           }
 
           try {
-            // Save image to MongoDB
+            // Save image to MongoDB (with placeholder emotion)
             const image = new Image({
               filename: req.file!.originalname,
               url: result.secure_url,
               public_id: result.public_id,
               mimetype: req.file!.mimetype,
               size: req.file!.size,
+              emotion: "Unknown",
+              confidence:0 // Placeholder until emotion detection is implemented
             });
             await image.save();
 
@@ -60,14 +63,23 @@ export const uploadImage = async (req: Request, res: Response): Promise<Response
             });
             console.log("Flask API response:", flaskResponse.data);
 
+            // Ensure the results array is not empty and safely extract emotion and confidence
+            const emotion = flaskResponse.data.results && flaskResponse.data.results[0]?.emotion ? flaskResponse.data.results[0].emotion : "Unknown";
+            const emotionConfidence = flaskResponse.data.results && flaskResponse.data.results[0]?.confidence ? flaskResponse.data.results[0].confidence : "Unknown";
+
+            // Update the image document with the detected emotion
+            image.emotion = emotion;
+            image.confidence=emotionConfidence // Update the emotion field
+            await image.save(); // Save the updated document
 
             // Return the image and detected emotion from Flask API response
             return resolve(res.status(201).json({
               message: "Image uploaded successfully",
               image,
-              emotion: flaskResponse.data.results[0]?.emotion || "Unknown",
-              emotionConfidence: flaskResponse.data.results[0]?.confidence || "Unknown",
+              emotion,
+              emotionConfidence,
             }));
+            
           } catch (error) {
             console.error("Error processing image:", error);
             return resolve(res.status(500).json({ message: "Error processing image", error }));
@@ -83,7 +95,6 @@ export const uploadImage = async (req: Request, res: Response): Promise<Response
     return res.status(500).json({ message: "Error uploading image", error });
   }
 };
-
 // Get all uploaded images
 export const getImages = async (req: Request, res: Response): Promise<Response> => {
   try {

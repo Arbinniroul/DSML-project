@@ -7,6 +7,8 @@ interface IImage {
   public_id: string; // Cloudinary public ID
   mimetype: string;
   size: number;
+  emotion: string;
+  confidence: number;
 }
 
 const imageSchema = new Schema<IImage>({
@@ -15,6 +17,8 @@ const imageSchema = new Schema<IImage>({
   public_id: { type: String, required: true },
   mimetype: { type: String, required: true },
   size: { type: Number, required: true },
+  emotion: { type: String},
+  confidence: { type: Number}
 });
 
 export const Image = model<IImage>("Image", imageSchema);
