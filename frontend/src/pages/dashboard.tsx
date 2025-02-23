@@ -37,7 +37,10 @@ export function Dashboard() {
     dispatch(fetchImages()); // Fetch images on component mount
   }, [dispatch]);
 
-  const handleSignOut = () => navigate("/");
+  const handleSignOut = () => {
+    sessionStorage.removeItem('token'); // Remove token from sessionStorage
+    navigate("/auth/login"); // Navigate to the login page
+  };
 
   const handleDelete = async (id: string) => {
     try {
@@ -167,7 +170,7 @@ export function Dashboard() {
                     src={image.url}
                     alt={image.filename}
                     className="rounded-lg w-full h-48 object-cover"
-/>
+                   />
                     <p className="mt-2">
                       <strong>Filename:</strong> {image.filename}
                     </p>

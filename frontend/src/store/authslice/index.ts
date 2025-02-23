@@ -1,141 +1,99 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import axios from "axios";
+import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
 
+// Define a specific type for the user structure based on your model
 interface User {
-  // Define the structure of your user object here
   id: string;
   name: string;
   email: string;
-  // Add other fields as needed
 }
 
 interface AuthState {
   isAuthenticated: boolean;
-  isLoading: boolean;
   user: User | null;
-}
-
-interface AuthResponse {
-  success: boolean;
-  user?: User;
+  loading: boolean; // To handle loading state
+  error: string | null; // To handle error state
 }
 
 const initialState: AuthState = {
   isAuthenticated: false,
-  isLoading: true,
   user: null,
+  loading: false,
+  error: null,
 };
 
-export const registerUser = createAsyncThunk(
-  "/auth/register",
-  async (formData: any) => {
-    const response = await axios.post<AuthResponse>(
-      `http://localhost:3000/api/auth/register`,
-      formData,
-      { withCredentials: true }
-    );
-    return response.data;
-  }
-);
-
+// Async thunk for login
 export const loginUser = createAsyncThunk(
-  "/auth/login",
-  async (formData: any) => {
-    const response = await axios.post<AuthResponse>(
-      `http://localhost:3000/api/auth/login`,
-      formData,
-      { withCredentials: true }
-    );
-    return response.data;
+  'auth/loginUser',
+  async (credentials: { email: string; password: string }, { rejectWithValue }) => {
+    try {
+      const response = await axios.post('http://localhost:8001/api/auth/login', credentials);
+      return response.data; // Return the user data and token from the response
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Login failed'); // Handle error message
+    }
   }
 );
 
-export const logoutUser = createAsyncThunk(
-  "/auth/logout",
-  async () => {
-    const response = await axios.post<AuthResponse>(
-      `http://localhost:3000/api/auth/logout`,
-      {},
-      { withCredentials: true }
-    );
-    return response.data;
-  }
-);
-
-export const checkAuth = createAsyncThunk(
-  "/auth/checkauth",
-  async () => {
-    const response = await axios.get<AuthResponse>(
-      `$http://localhost:3000/api/auth/checkauth`,
-      {
-        withCredentials: true,
-        headers: {
-          "Cache-Control":
-            "no-store, no-cache, must-revalidate, proxy-revalidate",
-        },
-      }
-    );
-    return response.data;
+// Async thunk for registration
+export const registerUser = createAsyncThunk(
+  'auth/registerUser',
+  async (userData: { name: string; email: string; password: string }, { rejectWithValue }) => {
+    try {
+      const response = await axios.post('http://localhost:8001/api/auth/register', userData);
+      return response.data; // Return the user data and token from the response
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Registration failed'); // Handle error message
+    }
   }
 );
 
 const authSlice = createSlice({
-  name: "auth",
+  name: 'auth',
   initialState,
   reducers: {
-    setUser: (state, action: PayloadAction<User | null>) => {
+    logout(state) {
+      state.isAuthenticated = false;
+      state.user = null;
+      state.error = null;
+    },
+    setUser(state, action: PayloadAction<User>) {
       state.user = action.payload;
-      state.isAuthenticated = !!action.payload;
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(registerUser.pending, (state) => {
-        state.isLoading = true;
-      })
-      .addCase(registerUser.fulfilled, (state) => {
-        state.isLoading = false;
-        state.user = null;
-        state.isAuthenticated = false;
-      })
-      .addCase(registerUser.rejected, (state) => {
-        state.isLoading = false;
-        state.user = null;
-        state.isAuthenticated = false;
-      })
       .addCase(loginUser.pending, (state) => {
-        state.isLoading = true;
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(loginUser.fulfilled, (state, action: PayloadAction<AuthResponse>) => {
-        state.isLoading = false;
-        state.user = action.payload.success ? action.payload.user! : null;
-        state.isAuthenticated = action.payload.success;
+      .addCase(loginUser.fulfilled, (state, action: PayloadAction<{ token: string; user: User }>) => {
+        state.isAuthenticated = true;
+        state.user = action.payload.user;
+        state.loading = false;
+        state.error = null;
       })
-      .addCase(loginUser.rejected, (state) => {
-        state.isLoading = false;
-        state.user = null;
-        state.isAuthenticated = false;
+      .addCase(loginUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string; // Use the error message from the thunk
       })
-      .addCase(checkAuth.pending, (state) => {
-        state.isLoading = true;
+      .addCase(registerUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(checkAuth.fulfilled, (state, action: PayloadAction<AuthResponse>) => {
-        state.isLoading = false;
-        state.user = action.payload.success ? action.payload.user! : null;
-        state.isAuthenticated = action.payload.success;
+      .addCase(registerUser.fulfilled, (state, action: PayloadAction<{ token: string; user: User }>) => {
+        state.isAuthenticated = true;
+        state.user = action.payload.user;
+        state.loading = false;
+        state.error = null;
       })
-      .addCase(checkAuth.rejected, (state) => {
-        state.isLoading = false;
-        state.user = null;
-        state.isAuthenticated = false;
-      })
-      .addCase(logoutUser.fulfilled, (state) => {
-        state.isLoading = false;
-        state.user = null;
-        state.isAuthenticated = false;
+      .addCase(registerUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string; // Use the error message from the thunk
       });
   },
 });
 
-export const { setUser } = authSlice.actions;
+export const { logout, setUser } = authSlice.actions;
+
 export default authSlice.reducer;

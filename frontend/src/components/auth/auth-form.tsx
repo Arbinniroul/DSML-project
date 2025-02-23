@@ -1,14 +1,19 @@
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Mail, Lock, Loader2 } from 'lucide-react';
+ // Adjust the import path as necessary
+import axios from 'axios'; // Make sure axios is installed
+import { login } from '@/store/authslice';
 
 interface AuthFormProps {
   mode: 'signin' | 'signup';
 }
 
 export function AuthForm({ mode }: AuthFormProps) {
+  const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,7 +22,20 @@ export function AuthForm({ mode }: AuthFormProps) {
     e.preventDefault();
     setIsLoading(true);
 
-    setTimeout(() => setIsLoading(false), 1000);
+    try {
+      const response = mode === 'signin'
+        ? await axios.post('/api/auth/login', { email, password }) // Adjust the API endpoint as necessary
+        : await axios.post('/api/auth/signup', { email, password }); // Adjust the API endpoint as necessary
+
+      const user = response.data; // Assuming the response contains user data
+      dispatch(login(user)); // Dispatch the login action with the user data
+      // You can redirect the user or show a success message here
+    } catch (error) {
+      console.error("Authentication error:", error);
+      // Handle error (e.g., show a notification or alert)
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

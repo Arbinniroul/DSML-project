@@ -2,6 +2,8 @@ import express, { Request, Response } from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import imageRoutes from "./routes/ImageRoute";
+import authRoutes from "./routes/AuthRoutes";
+
 import cors from "cors";
 // Load environment variables
 dotenv.config();
@@ -16,6 +18,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api", imageRoutes);
+app.use("/api/auth", authRoutes);
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello, TypeScript Backend!");
 });
