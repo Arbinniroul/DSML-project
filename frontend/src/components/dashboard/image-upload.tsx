@@ -1,66 +1,72 @@
-import { useState, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Loader2, Upload } from 'lucide-react';
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
-interface ImageUploadProps {
-  onUpload: (file: File) => void;
-  loading: boolean;
-}
+import { AppDispatch } from "@/store/store";
+import { RootState } from "@reduxjs/toolkit/query";
+import { deleteImage, fetchImages, uploadImage } from "@/store/imageSlice";
 
-export function ImageUpload({ onUpload, loading }: ImageUploadProps) {
+const ProductImageUpload: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const dispatch = useDispatch<AppDispatch>();
+  const { images, loading, error } = useSelector((state: RootState) => state.images);
 
-  const handleFileSelect = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (file) {
-        if (!file.type.startsWith('image/')) {
-          alert('Please upload an image file');
-          return;
-        }
-        if (file.size > 5 * 1024 * 1024) {
-          alert('File size too large (max 5MB)');
-          return;
-        }
-        setSelectedFile(file);
-      }
-    },
-    []
-  );
-
-  const handleUpload = useCallback(() => {
-    if (selectedFile) {
-      onUpload(selectedFile);
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("File input changed");  // Check if the function is triggered
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      console.log("Selected file:", file);  // Log selected file
+      setSelectedFile(file);
     }
-  }, [selectedFile, onUpload]);
+  };
+  
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+  
+    console.log("Selected file:", selectedFile);  // Log selected file before dispatching
+  
+    try {
+      const response = await dispatch(uploadImage(selectedFile)).unwrap();
+      console.log(response); // Log response from server
+      dispatch(fetchImages()); // Refresh image list
+    } catch (error) {
+      console.error("Error uploading image:", error);
+    }
+  };
+  
+
+  const handleDelete = async (id: string) => {
+    try {
+      await dispatch(deleteImage(id)).unwrap();
+      dispatch(fetchImages()); // Refresh image list
+    } catch (error) {
+      console.error("Error deleting image:", error);
+    }
+  };
 
   return (
-    <div className="space-y-4">
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleFileSelect}
-        className="hidden"
-        id="image-upload"
-      />
-      <label htmlFor="image-upload" className="cursor-pointer">
-        <Button variant="outline" asChild>
-          <div>
-            {loading ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4 mr-2" />
-            )}
-            Select Image
+    <div className="container">
+      <h2>Upload Image</h2>
+      <input type="file" accept="image/*" onChange={handleFileChange} />
+      <button onClick={handleUpload} disabled={!selectedFile || loading}>
+        {loading ? "Uploading..." : "Upload"}
+      </button>
+
+      {error && <p style={{ color: "red" }}>Error: {error.message || "An unknown error occurred."}</p>}
+
+      <h2>Uploaded Images</h2>
+      {loading && <p>Loading images...</p>}
+      <div className="image-grid">
+        {images.map((image) => (
+          <div key={image._id} className="image-container">
+            <img src={image.url} alt={image.filename} width="200" />
+            <p>Emotion: {image.emotion || "Unknown"}</p>
+            <button onClick={() => handleDelete(image._id)}>Delete</button>
           </div>
-        </Button>
-      </label>
-      
-      {selectedFile && !loading && (
-        <Button onClick={handleUpload}>
-          Analyze Image
-        </Button>
-      )}
+        ))}
+      </div>
     </div>
   );
-}
+};
+
+export default ProductImageUpload;

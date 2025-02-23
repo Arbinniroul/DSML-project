@@ -1,0 +1,14 @@
+tensorflow>=2.0  # Or tensorflow-gpu if you have NVIDIA GPU
+keras            # (Usually comes with TensorFlow)
+pandas
+numpy
+jupyter
+matplotlib       # Highly recommended for visualization
+scikit-learn     # Useful for metrics/preprocessing
+opencv-python    # Main package
+opencv-contrib-python  # Full package (contains both main/contrib modules)
+tqdm
+pillow
+flask
+flask_cors 
+          # Alternative image processing

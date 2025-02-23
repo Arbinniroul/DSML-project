@@ -1,12 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useDispatch } from "react-redux";
+import { uploadImage } from "@/store/imageSlice";
+
 
 interface WebcamCaptureProps {
-  onCapture: (file: File) => void; // Callback to handle the captured image
   onClose: () => void; // Callback to close the webcam
 }
 
-export function WebcamCapture({ onCapture, onClose }: WebcamCaptureProps) {
+export function WebcamCapture({ onClose }: WebcamCaptureProps) {
+  const dispatch = useDispatch();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -48,7 +51,7 @@ export function WebcamCapture({ onCapture, onClose }: WebcamCaptureProps) {
         if (blob) {
           // Create a File object from the Blob
           const file = new File([blob], "webcam-capture.png", { type: "image/png" });
-          onCapture(file); // Pass the captured image to the parent component
+          dispatch(uploadImage(file)); // Dispatch the uploadImage action
         }
       }, "image/png");
     }
