@@ -1,3 +1,4 @@
+// authSlice.ts
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
@@ -15,9 +16,15 @@ interface AuthState {
   error: string | null; // To handle error state
 }
 
+// Load user from session storage on initial load
+const loadUserFromSessionStorage = (): User | null => {
+  const userData = sessionStorage.getItem('user');
+  return userData ? JSON.parse(userData) : null;
+};
+
 const initialState: AuthState = {
-  isAuthenticated: false,
-  user: null,
+  isAuthenticated: !!loadUserFromSessionStorage(), // Set isAuthenticated based on session storage
+  user: loadUserFromSessionStorage(),
   loading: false,
   error: null,
 };
@@ -53,42 +60,57 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     logout(state) {
-      state.isAuthenticated = false;
-      state.user = null;
-      state.error = null;
+      state.isAuthenticated = false; // Set isAuthenticated to false on logout
+      state.user = null; // Clear user data
+      state.error = null; // Clear any errors
+      sessionStorage.removeItem('user'); // Remove user from session storage on logout
+      sessionStorage.removeItem('token'); // Remove token from session storage on logout
     },
     setUser(state, action: PayloadAction<User>) {
-      state.user = action.payload;
+      state.user = action.payload; // Set the user data
+      state.isAuthenticated = true; // Set isAuthenticated to true
+      sessionStorage.setItem('user', JSON.stringify(action.payload)); // Save user to session storage
     },
   },
   extraReducers: (builder) => {
     builder
       .addCase(loginUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        state.loading = true; // Set loading to true while waiting for response
+        state.error = null; // Clear any previous errors
       })
       .addCase(loginUser.fulfilled, (state, action: PayloadAction<{ token: string; user: User }>) => {
-        state.isAuthenticated = true;
-        state.user = action.payload.user;
-        state.loading = false;
-        state.error = null;
+        state.isAuthenticated = true; // Set isAuthenticated to true
+        state.user = action.payload.user; // Set user data from the response
+
+        state.loading = false; // Set loading to false after receiving response
+        state.error = null; // Clear any previous errors
+
+        // Save user and token to session storage
+        sessionStorage.setItem('user', JSON.stringify(action.payload.user));
+        sessionStorage.setItem('token', action.payload.token);
+
+        console.log('Login successful:', action.payload.user); // Debugging
       })
       .addCase(loginUser.rejected, (state, action) => {
-        state.loading = false;
+        state.loading = false; // Set loading to false on error
         state.error = action.payload as string; // Use the error message from the thunk
       })
       .addCase(registerUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        state.loading = true; // Set loading to true while waiting for response
+        state.error = null; // Clear any previous errors
       })
       .addCase(registerUser.fulfilled, (state, action: PayloadAction<{ token: string; user: User }>) => {
-        state.isAuthenticated = true;
-        state.user = action.payload.user;
-        state.loading = false;
-        state.error = null;
+        state.isAuthenticated = false; // Fix: Set to true after registration
+        state.user = action.payload.user; // Set user data from the response
+        state.loading = false; // Set loading to false after receiving response
+        state.error = null; // Clear any previous errors
+
+        // Save user and token to session storage
+        sessionStorage.setItem('user', JSON.stringify(action.payload.user));
+        sessionStorage.setItem('token', action.payload.token);
       })
       .addCase(registerUser.rejected, (state, action) => {
-        state.loading = false;
+        state.loading = false; // Set loading to false on error
         state.error = action.payload as string; // Use the error message from the thunk
       });
   },

@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Camera, Upload, History, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
 import axios from "axios";
 import ProductImageUpload from "@/components/admin/imageUpload";
 import { WebcamCapture } from "@/components/dashboard/webcamcapture";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/store";
 import { deleteImage, fetchImages } from "@/store/imageSlice";
+import { logout } from "@/store/authslice";
 
 interface AnalysisResult {
   emotion: string;
@@ -25,6 +25,7 @@ export function Dashboard() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { images } = useSelector((state: RootState) => state.images);
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth); // Check the authentication state
 
   const [activeTab, setActiveTab] = useState<"upload" | "camera" | "history">("upload");
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[] | null>(null);
@@ -33,12 +34,11 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [imgFile, setImgFile] = useState<File | null>(null);
 
-  useEffect(() => {
-    dispatch(fetchImages()); // Fetch images on component mount
-  }, [dispatch]);
+  
 
   const handleSignOut = () => {
-    sessionStorage.removeItem('token'); // Remove token from sessionStorage
+    dispatch(logout()); // Dispatch the logout action to clear the authentication state
+
     navigate("/auth/login"); // Navigate to the login page
   };
 

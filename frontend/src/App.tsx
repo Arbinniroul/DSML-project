@@ -1,24 +1,50 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthPage } from '@/pages/auth';
-import { Dashboard } from '@/pages/dashboard';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import ProtectedRoute from './components/auth/ProtectedRoute';
- // Adjust the import path as needed
 
+import NotFound from './pages/NotFound';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import { Dashboard } from './pages/dashboard';
+import { AuthPage } from './pages/auth';
+import { RootState } from './store/store';
+import { useSelector } from 'react-redux';
+
+// App.tsx (simplified)
+// App.tsx (修正)
 function App() {
+  const user = useSelector((state: RootState) => state.auth.user);
+
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<AuthPage />}>
-          {/* Nested routes for login and register */}
-          <Route path="auth/login" element={<Login />} />
-          <Route path="auth/register" element={<Register />} />
+        {/* Auth routes (only accessible if NOT logged in) */}
+        <Route
+          path="/auth"
+          element={user ? <Navigate to="/home" replace /> : <AuthPage />}
+        >
+          <Route path="login" element={<Login />} />
+          <Route path="register" element={<Register />} />
         </Route>
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+
+        {/* Protected routes */}
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Root redirect */}
+        <Route
+          path="/"
+          element={<Navigate to={user ? "/home" : "/auth/login"} replace />}
+        />
+
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );
 }
-
 export default App;

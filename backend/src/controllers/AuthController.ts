@@ -38,7 +38,7 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-// User login
+// controllers/authController.ts
 export const signIn = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
@@ -50,8 +50,15 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
     }
 
     const token = generateToken(user);
-    res.json({ token, userId: user._id, name: user.name });
-  } catch (error: any) { // Use 'any' or a custom error type here
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email 
+      } 
+    });
+  } catch (error: any) {
     console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message || 'Unknown error' });
   }

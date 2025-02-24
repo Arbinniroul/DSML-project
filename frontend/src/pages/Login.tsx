@@ -22,7 +22,7 @@ const Login: React.FC = () => {
       if (loginUser.fulfilled.match(resultAction)) {
         // If login is successful, set the token in sessionStorage
         sessionStorage.setItem('token', resultAction.payload.token);
-        navigate('/dashboard'); // Redirect to dashboard after successful login
+        navigate('/home'); // Redirect to dashboard after successful login
       }
     } catch (error) {
       console.error(error); // Handle error if needed
